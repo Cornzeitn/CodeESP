@@ -1,0 +1,98 @@
+// Il faut déclarer un objet de classe WiFiClient , qui nous permettra de créer une connexion vers une certaine IP et un certain port.
+// Il faut également déclarer un objet de classe PubSubClient, qui reçoit en entrée du constructeur l'objet WiFiClient précédemment défini.
+#include <ESP8266WiFi.h>
+#include <ESP8266WiFiMulti.h>
+//#include <WiFi.h>
+#include <PubSubClient.h>
+ 
+//const char* ssid = "ciscoG5";
+//const char* password =  "cachanit2rG5";
+
+const char* ssid = "Numericable-0925";
+const char* password =  "fqzr5qqvqwhq";
+
+const char* mqttServer = "192.168.0.15";
+const int mqttPort = 1883;
+long tps=0;
+const char* mqttUser = "raspberry";
+const char* mqttPassword = "raspberry";
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+// Ensuite, il faut utiliser la méthode setCallback sur le même objet pour spécifier une fonction de gestion.
+// Cette fonction de traitement sera exécutée lorsqu'un message MQTT est reçu sur un sujet souscrit.
+// Nous laisserons le code de cette fonction pour ce dernier.
+void callback(char* topic, byte* payload, unsigned int length) {
+
+  for (int i = 0; i < length; i++) {
+  Serial.print((char)payload[i]);
+    
+  }
+  Serial.println();
+}
+
+void setup_mqtt(){
+  client.setServer(mqttServer, mqttPort);
+  reconnect();
+}
+ 
+void setup() {
+ 
+  Serial.begin(9600);
+ 
+  WiFi.begin("Numericable-0925", "fqzr5qqvqwhq");
+ 
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.println("Connexion au Wi-Fi..");
+  }
+  Serial.println("Connecté au réseau Wi-Fi");
+ 
+  client.setServer(mqttServer, mqttPort);
+  client.setCallback(callback);
+
+
+// Il faut nous connecter au serveur MQTT.
+// Il le fera en boucle jusqu'à ce qu'à obtenir le succès.
+  while (!client.connected()) {
+    Serial.println("Connexion à MQTT...");
+ 
+    if (client.connect("ESP8266Client", mqttUser, mqttPassword)) {
+ 
+      Serial.println("connecté");  
+ 
+    } else {
+ 
+      Serial.print("a échoué avec l'état");
+      Serial.print(client.state());
+      delay(2000);
+ 
+    }
+  }
+ 
+  client.subscribe("commande");
+ 
+}
+
+// Dans la fonction de boucle principale, nous devrons appeler la méthode de boucle du PubSubClient.
+// Comme indiqué dans la documentation de la bibliothèque, la fonction doit être appelée régulièrement, afin de permettre au client de traiter les messages entrants et de maintenir la connexion au serveur MQTT.
+void loop() {
+  client.loop();
+}
+
+void reconnect(){
+  while (!client.connected()) {
+    Serial.println("Connection au serveur MQTT ...");
+    if (client.connect("ESPClient", mqttUser, mqttPassword)) {
+      Serial.println("MQTT connecté");
+    }
+    else {
+      Serial.print("echec, code erreur= ");
+      Serial.println(client.state());
+      Serial.println("nouvel essai dans 2s");
+    delay(2000);
+    }
+  }
+  client.subscribe("commande");
+}
